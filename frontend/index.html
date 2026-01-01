@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Breast Cancer Prediction System</title>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      body {
+        font-family: "Poppins", sans-serif;
+        background: linear-gradient(135deg, #74ebd5, #acb6e5);
+        padding: 30px;
+      }
+
+      .container {
+        max-width: 1000px;
+        margin: auto;
+        background: white;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+      }
+
+      h1 {
+        text-align: center;
+        color: #333;
+      }
+
+      .description {
+        margin: 20px 0;
+        font-size: 14px;
+        color: #555;
+        line-height: 1.6;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+        margin-top: 20px;
+      }
+
+      label {
+        font-size: 13px;
+        color: #333;
+      }
+
+      input {
+        width: 100%;
+        padding: 8px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+      }
+
+      .buttons {
+        text-align: center;
+        margin-top: 25px;
+      }
+
+      button {
+        padding: 12px 25px;
+        margin: 5px;
+        border: none;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        font-weight: bold;
+        cursor: pointer;
+      }
+
+      button:hover {
+        transform: scale(1.05);
+      }
+
+      #result {
+        margin-top: 25px;
+        text-align: center;
+        font-size: 20px;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <h1>Breast Cancer Prediction System</h1>
+
+      <div class="description">
+        <b>About the Dataset:</b><br />
+        This system uses the <i>Breast Cancer Wisconsin Diagnostic Dataset</i>.
+        Each input represents a computed feature from a digitized image of a
+        breast mass. The model predicts whether the tumor is
+        <b>Benign (non-cancerous)</b> or <b>Malignant (cancerous)</b>.
+        <br /><br />
+
+        <b>How to Use:</b><br />
+        • Enter all 30 numeric feature values in the fields below.<br />
+        • Values must be entered in the given order.<br />
+        • Click a model button to get a prediction.
+        <br /><br />
+
+        <b>Output:</b><br />
+        • <span style="color: green">Benign ✅</span> — Non-cancerous tumor<br />
+        • <span style="color: red">Malignant ❌</span> — Cancerous tumor
+      </div>
+
+      <div class="grid" id="inputs"></div>
+
+      <div class="buttons">
+        <button onclick="predict('logistic')">Logistic Regression</button>
+        <button onclick="predict('tree')">Decision Tree</button>
+      </div>
+
+      <div id="result"></div>
+    </div>
+
+    <script>
+      const benignSample = [
+        9.504, 12.44, 60.34, 273.9, 0.1024, 0.06492, 0.02956, 0.02076, 0.1815,
+        0.06905, 0.2773, 0.9768, 1.909, 15.7, 0.009606, 0.01432, 0.01985,
+        0.01421, 0.02027, 0.002968, 10.23, 15.66, 65.13, 314.9, 0.1324, 0.1148,
+        0.08867, 0.06227, 0.245, 0.07773,
+      ];
+
+      const featureNames = [
+        "Mean Radius",
+        "Mean Texture",
+        "Mean Perimeter",
+        "Mean Area",
+        "Mean Smoothness",
+        "Mean Compactness",
+        "Mean Concavity",
+        "Mean Concave Points",
+        "Mean Symmetry",
+        "Mean Fractal Dimension",
+        "Radius Error",
+        "Texture Error",
+        "Perimeter Error",
+        "Area Error",
+        "Smoothness Error",
+        "Compactness Error",
+        "Concavity Error",
+        "Concave Points Error",
+        "Symmetry Error",
+        "Fractal Dimension Error",
+        "Worst Radius",
+        "Worst Texture",
+        "Worst Perimeter",
+        "Worst Area",
+        "Worst Smoothness",
+        "Worst Compactness",
+        "Worst Concavity",
+        "Worst Concave Points",
+        "Worst Symmetry",
+        "Worst Fractal Dimension",
+      ];
+
+      const container = document.getElementById("inputs");
+
+      featureNames.forEach((name, i) => {
+        container.innerHTML += `
+    <div>
+      <label>${i + 1}. ${name}</label>
+      <input type="number" step="any">
+    </div>
+  `;
+      });
+
+      // Auto-fill benign values on load
+      window.onload = () => {
+        const inputs = container.querySelectorAll("input");
+        benignSample.forEach((value, index) => {
+          inputs[index].value = value;
+        });
+
+        document.getElementById("result").innerText =
+          "🟢 Default Sample Loaded: Benign (Non-cancerous)";
+      };
+
+      async function predict(model) {
+        const inputs = container.querySelectorAll("input");
+        const values = [];
+
+        for (let i = 0; i < inputs.length; i++) {
+          const val = inputs[i].value.trim(); // remove spaces
+          if (val === "") {
+            // check for empty
+            document.getElementById("result").innerText = `⚠️ Field ${
+              i + 1
+            } is empty. Please fill all 30 fields.`;
+            return;
+          }
+          values.push(Number(val));
+        }
+
+        // Extra safety: check for invalid numbers
+        if (values.some((v) => isNaN(v))) {
+          document.getElementById("result").innerText =
+            "⚠️ Some fields contain invalid numbers.";
+          return;
+        }
+
+        try {
+          const response = await fetch(
+            "http://127.0.0.1:8000/predict/" + model,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ features: values }),
+            }
+          );
+
+          const data = await response.json();
+
+          document.getElementById("result").innerText =
+            data.prediction === 1
+              ? `🟢 Prediction: Benign (Confidence: ${data.confidence}%)`
+              : `🔴 Prediction: Malignant (Confidence: ${data.confidence}%)`;
+        } catch (error) {
+          document.getElementById("result").innerText =
+            "⚠️ Could not connect to backend!";
+          console.error(error);
+        }
+      }
+    </script>
+  </body>
+</html>
