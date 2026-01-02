@@ -208,8 +208,8 @@
 
         try {
           const response = await fetch(
-            // "https://ml-model-deployment-fuhj.onrender.com/predict/" + model,
-            "http://127.0.0.1:8000/predict/" + model,
+            "https://ml-model-deployment-fuhj.onrender.com/predict/" + model,
+
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
